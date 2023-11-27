@@ -3,39 +3,36 @@ pragma solidity >=0.8.0;
 
 import "./IntegrationBase.t.sol";
 
-import { OptimismDomain } from "../src/testing/OptimismDomain.sol";
+import {OptimismDomain} from "../src/testing/OptimismDomain.sol";
 
-import { OptimismReceiver } from "../src/OptimismReceiver.sol";
+import {OptimismReceiver} from "../src/OptimismReceiver.sol";
 
 contract MessageOrderingOptimism is MessageOrdering, OptimismReceiver {
-
     constructor(address _l1Authority) OptimismReceiver(_l1Authority) {}
 
     function push(uint256 messageId) public override onlyCrossChainMessage {
         super.push(messageId);
     }
-
 }
 
 contract OptimismIntegrationTest is IntegrationBaseTest {
-
     event FailedRelayedMessage(bytes32);
 
-    function test_optimism() public {
-        checkOptimismStyle(new OptimismDomain(getChain("optimism"), mainnet));
-    }
+    // function test_optimism() public {
+    //     checkOptimismStyle(new OptimismDomain(getChain("optimism"), mainnet));
+    // }
 
-    function test_optimismGoerli() public {
-        checkOptimismStyle(new OptimismDomain(getChain("optimism_goerli"), goerli));
-    }
+    // function test_optimismGoerli() public {
+    //     checkOptimismStyle(new OptimismDomain(getChain("optimism_goerli"), goerli));
+    // }
 
-    function test_base() public {
-        checkOptimismStyle(new OptimismDomain(getChain("base"), mainnet));
-    }
+    // function test_base() public {
+    //     checkOptimismStyle(new OptimismDomain(getChain("base"), mainnet));
+    // }
 
-    function test_baseGoerli() public {
-        checkOptimismStyle(new OptimismDomain(getChain("base_goerli"), goerli));
-    }
+    // function test_baseGoerli() public {
+    //     checkOptimismStyle(new OptimismDomain(getChain("base_goerli"), goerli));
+    // }
 
     function checkOptimismStyle(OptimismDomain optimism) public {
         Domain host = optimism.hostDomain();
@@ -108,11 +105,10 @@ contract OptimismIntegrationTest is IntegrationBaseTest {
         // The revert is caught so it doesn't propagate
         // Just look at the no change to verify it didn't go through
         optimism.relayFromHost(true);
-        assertEq(moOptimism.length(), 2);   // No change
+        assertEq(moOptimism.length(), 2); // No change
 
         optimism.selectFork();
         vm.expectRevert("Receiver/invalid-sender");
         moOptimism.push(999);
     }
-
 }

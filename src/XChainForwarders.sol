@@ -45,12 +45,22 @@ interface ICrossDomainZkEVM {
 }
 
 interface ICrossDomainZkSync {
-    function callZkSync(
-        address contractAddr,
-        bytes memory data,
-        uint256 gasLimit,
-        uint256 gasPerPubdataByteLimit
-    ) external payable;
+    function requestL2Transaction(
+        address _contractL2,
+        uint256 _l2Value,
+        bytes calldata _calldata,
+        uint256 _l2GasLimit,
+        uint256 _l2GasPerPubdataByteLimit,
+        bytes[] calldata _factoryDeps,
+        address _refundRecipient
+    ) external payable returns (bytes32 canonicalTxHash);
+
+    // function callZkSync(
+    //     address contractAddr,
+    //     bytes memory data,
+    //     uint256 gasLimit,
+    //     uint256 gasPerPubdataByteLimit
+    // ) external payable;
 }
 
 /**
@@ -224,28 +234,40 @@ library XChainForwarders {
         address contractAddr,
         bytes memory data,
         uint256 gasLimit,
-        uint256 gasPerPubdataByteLimit
+        uint256 gasPerPubdataByteLimit,
+        uint256 _value
     ) internal {
-        ICrossDomainZkSync(crossDomain).callZkSync(
+        ICrossDomainZkSync(crossDomain).requestL2Transaction{value: _value}(
             contractAddr,
+            0,
             data,
             gasLimit,
-            gasPerPubdataByteLimit
+            gasPerPubdataByteLimit,
+            new bytes[](0),
+            msg.sender
         );
+
+        // ICrossDomainZkSync(crossDomain).callZkSync(
+        //     contractAddr,
+        //     data,
+        //     gasLimit,
+        //     gasPerPubdataByteLimit
+        // );
     }
 
-    function sendMessageZkSyncEraTestnet(
+    function sendMessageZkSyncEra(
         address contractAddr,
         bytes memory data,
         uint256 gasLimit,
         uint256 gasPerPubdataByteLimit
     ) internal {
         sendMessageZkSync(
-            0xB7FD5bAa6fF91Ff8B750a318f4D9dd4C4C8b0270,
+            0x32400084C286CF3E17e7B677ea9583e60a000324,
             contractAddr,
             data,
             gasLimit,
-            gasPerPubdataByteLimit
+            gasPerPubdataByteLimit,
+            1 ether //TODO estimate value to send
         );
     }
 }
