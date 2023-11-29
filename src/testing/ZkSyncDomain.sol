@@ -142,9 +142,12 @@ contract ZkSyncDomain is BridgedDomain {
                     );
 
                 console.logBytes(transaction.data);
+
+                vm.startPrank(address(uint160(transaction.from)));
                 (bool success, bytes memory response) = address(
                     uint160((transaction.to))
                 ).call(transaction.data);
+                vm.stopPrank();
             }
         }
 
