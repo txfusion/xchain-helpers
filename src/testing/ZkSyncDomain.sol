@@ -87,8 +87,7 @@ contract ZkSyncDomain is BridgedDomain {
 
     bytes32 constant L1_EVENT_TOPIC =
         keccak256(
-            "NewPriorityRequest(uint256,bytes32,uint64,L2CanonicalTransaction,bytes[])"
-            // "NewPriorityRequest(uint256,bytes32,uint64,{uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256[4],bytes,bytes,uint256[],bytes,bytes},bytes[])"
+            "NewPriorityRequest(uint256,bytes32,uint64,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256[4],bytes,bytes,uint256[],bytes,bytes),bytes[])"
         );
 
     bytes32 constant L1_MESSAGE_SENT_TOPIC =
@@ -113,22 +112,18 @@ contract ZkSyncDomain is BridgedDomain {
     }
 
     function relayFromHost(bool switchToGuest) external override {
-        console.log("This is relayFromHost()");
         selectFork();
 
         // Read all L1 -> L2 messages and relay them under zkevm fork
         Vm.Log[] memory logs = RecordedLogs.getLogs();
         for (; lastFromHostLogIndex < logs.length; lastFromHostLogIndex++) {
-            console.log("Logs");
             Vm.Log memory log = logs[lastFromHostLogIndex];
             console.logBytes32(log.topics[0]);
             console.logBytes32(L1_EVENT_TOPIC);
             if (
-                // log.topics[0] == L1_EVENT_TOPIC
-                // &&
+                log.topics[0] == L1_EVENT_TOPIC &&
                 log.emitter == address(L1_MESSENGER)
             ) {
-                console.log("Log emitter: %s", log.emitter);
                 (
                     uint256 txId,
                     bytes32 txHash,
@@ -150,9 +145,6 @@ contract ZkSyncDomain is BridgedDomain {
                 (bool success, bytes memory response) = address(
                     uint160((transaction.to))
                 ).call(transaction.data);
-
-                //message should be automatically executed (check how it works on different rollups)
-                //how long does it take for the
             }
         }
 

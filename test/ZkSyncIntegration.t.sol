@@ -10,7 +10,6 @@ contract ZkSyncIntegrationTest is IntegrationBaseTest {
     uint256 forkId;
 
     function test_zksync() public {
-        console.log("This is zksync test");
         setChain(
             "zksync",
             ChainData("ZkSync", 324, "https://mainnet.era.zksync.io")
@@ -19,7 +18,6 @@ contract ZkSyncIntegrationTest is IntegrationBaseTest {
     }
 
     function checkZkSyncStyle(ZkSyncDomain zksync) public {
-        console.log("This is checkzksyncstyle()");
         Domain host = zksync.hostDomain();
 
         forkId = host.forkId();
