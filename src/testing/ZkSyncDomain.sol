@@ -7,9 +7,6 @@ import {Vm} from "forge-std/Vm.sol";
 import {Domain, BridgedDomain} from "./BridgedDomain.sol";
 import {RecordedLogs} from "./RecordedLogs.sol";
 
-import "forge-std/console.sol";
-
-//used for l1->l2 communication
 interface ICrossDomainZkSync {
     function requestL2Transaction(
         address _contractL2,
@@ -20,18 +17,9 @@ interface ICrossDomainZkSync {
         bytes[] calldata _factoryDeps,
         address _refundRecipient
     ) external payable returns (bytes32 canonicalTxHash);
-
-    // function callZkSync(
-    //     address contractAddr,
-    //     bytes memory data,
-    //     uint256 gasLimit,
-    //     uint256 gasPerPubdataByteLimit
-    // ) external payable;
 }
 
 interface IL1Messenger {
-    // Possibly in the future we will be able to track the messages sent to L1 with
-    // some hooks in the VM. For now, it is much easier to track them with L2 events.
     event L1MessageSent(
         address indexed _sender,
         bytes32 indexed _hash,
@@ -39,12 +27,6 @@ interface IL1Messenger {
     );
 
     function sendToL1(bytes memory _message) external returns (bytes32);
-
-    function sendL2ToL1Log(
-        bool _isService,
-        bytes32 _key,
-        bytes32 _value
-    ) external returns (uint256 logIdInMerkleTree);
 }
 
 struct L2CanonicalTransaction {
@@ -66,22 +48,11 @@ struct L2CanonicalTransaction {
     bytes reservedDynamic;
 }
 
-/**
-    emit NewPriorityRequest(
-            _priorityOpParams.txId,
-            canonicalTxHash,
-            _priorityOpParams.expirationTimestamp,
-            transaction,
-            _factoryDeps
-        );
- */
-
 contract ZkSyncDomain is BridgedDomain {
     ICrossDomainZkSync public L1_MESSENGER;
 
-    uint160 private constant SYSTEM_CONTRACTS_OFFSET = 0x8000; // 2^15
+    uint160 private constant SYSTEM_CONTRACTS_OFFSET = 0x8000;
 
-    /// @notice Address of the zkSync's L2Messenger contract
     IL1Messenger public constant L2_MESSENGER =
         IL1Messenger(address(SYSTEM_CONTRACTS_OFFSET + 0x08));
 
@@ -114,23 +85,16 @@ contract ZkSyncDomain is BridgedDomain {
     function relayFromHost(bool switchToGuest) external override {
         selectFork();
 
-        // Read all L1 -> L2 messages and relay them under zkevm fork
+        // Read all L1 -> L2 messages and relay them under zksync fork
         Vm.Log[] memory logs = RecordedLogs.getLogs();
         for (; lastFromHostLogIndex < logs.length; lastFromHostLogIndex++) {
             Vm.Log memory log = logs[lastFromHostLogIndex];
-            console.logBytes32(log.topics[0]);
-            console.logBytes32(L1_EVENT_TOPIC);
             if (
                 log.topics[0] == L1_EVENT_TOPIC &&
                 log.emitter == address(L1_MESSENGER)
             ) {
-                (
-                    uint256 txId,
-                    bytes32 txHash,
-                    uint64 expirationTimestamp,
-                    L2CanonicalTransaction memory transaction,
-                    bytes[] memory factoryDeps
-                ) = abi.decode(
+                (, , , L2CanonicalTransaction memory transaction, ) = abi
+                    .decode(
                         log.data,
                         (
                             uint256,
@@ -141,13 +105,17 @@ contract ZkSyncDomain is BridgedDomain {
                         )
                     );
 
-                console.logBytes(transaction.data);
-
                 vm.startPrank(address(uint160(transaction.from)));
                 (bool success, bytes memory response) = address(
                     uint160((transaction.to))
                 ).call(transaction.data);
                 vm.stopPrank();
+
+                if (!success) {
+                    assembly {
+                        revert(add(response, 32), mload(response))
+                    }
+                }
             }
         }
 
@@ -192,11 +160,5 @@ contract ZkSyncDomain is BridgedDomain {
             _target := mload(add(message, 0x14))
             _calldata := mload(add(message, 0x38))
         }
-        // _target = 0xc4448b71118c9071Bcb9734A0EAc55D18A153949; //need change TODO
-        // _calldata = "";
-
-        // uint256 offset;
-        // (_target, offset) = UnsafeBytes.readAddress(_l2ToL1message, 0);
-        // (_calldata, ) = UnsafeBytes.Read(_l2ToL1message, offset);
     }
 }

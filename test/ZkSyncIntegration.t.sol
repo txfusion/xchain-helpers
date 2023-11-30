@@ -4,7 +4,6 @@ pragma solidity >=0.8.0;
 import "./IntegrationBase.t.sol";
 
 import {ZkSyncDomain} from "../src/testing/ZkSyncDomain.sol";
-import "forge-std/console.sol";
 
 contract ZkSyncIntegrationTest is IntegrationBaseTest {
     uint256 forkId;
