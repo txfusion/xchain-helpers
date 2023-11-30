@@ -218,10 +218,11 @@ library XChainForwarders {
         uint256 gasLimit,
         uint256 gasPerPubdataByteLimit
     ) internal {
-        uint256 maxFeePerGas = 1 gwei;
+        // Current gas price estimate (can be updated as needed)
+        uint256 gasPrice = 30 gwei;
         uint256 baseCost = ICrossDomainZkSync(l1CrossDomain)
             .l2TransactionBaseCost(
-                maxFeePerGas,
+                gasPrice,
                 gasLimit,
                 gasPerPubdataByteLimit
             );
