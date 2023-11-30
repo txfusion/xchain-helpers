@@ -2,11 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface ICrossDomainOptimism {
-    function sendMessage(
-        address _target,
-        bytes calldata _message,
-        uint32 _gasLimit
-    ) external;
+    function sendMessage(address _target, bytes calldata _message, uint32 _gasLimit) external;
 }
 
 interface ICrossDomainArbitrum {
@@ -21,18 +17,11 @@ interface ICrossDomainArbitrum {
         bytes calldata data
     ) external payable returns (uint256);
 
-    function calculateRetryableSubmissionFee(
-        uint256 dataLength,
-        uint256 baseFee
-    ) external view returns (uint256);
+    function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee) external view returns (uint256);
 }
 
 interface ICrossDomainGnosis {
-    function requireToPassMessage(
-        address _contract,
-        bytes memory _data,
-        uint256 _gas
-    ) external returns (bytes32);
+    function requireToPassMessage(address _contract, bytes memory _data, uint256 _gas) external returns (bytes32);
 }
 
 interface ICrossDomainZkEVM {
@@ -68,6 +57,7 @@ interface ICrossDomainZkSync {
  * @dev General structure is sendMessageXXX(target, message, gasLimit) where XXX is the remote domain name (IE OptimismMainnet, ArbitrumOne, Base, etc).
  */
 library XChainForwarders {
+
     /// ================================ Optimism Style ================================
 
     function sendMessageOptimism(
@@ -122,15 +112,9 @@ library XChainForwarders {
         uint256 maxFeePerGas = 1 gwei;
         uint256 baseFeeMargin = 10 gwei;
 
-        uint256 maxSubmission = ICrossDomainArbitrum(l1CrossDomain)
-            .calculateRetryableSubmissionFee(
-                message.length,
-                block.basefee + baseFeeMargin
-            );
+        uint256 maxSubmission = ICrossDomainArbitrum(l1CrossDomain).calculateRetryableSubmissionFee(message.length, block.basefee + baseFeeMargin);
         uint256 maxRedemption = gasLimit * maxFeePerGas;
-        ICrossDomainArbitrum(l1CrossDomain).createRetryableTicket{
-            value: maxSubmission + maxRedemption
-        }(
+        ICrossDomainArbitrum(l1CrossDomain).createRetryableTicket{value: maxSubmission + maxRedemption}(
             target,
             0, // we always assume that l2CallValue = 0
             maxSubmission,
@@ -226,7 +210,7 @@ library XChainForwarders {
         );
     }
 
-    /// ================================ ZkSync ================================
+    /// ================================ zkSync ================================
 
     function sendMessageZkSync(
         address crossDomain,
