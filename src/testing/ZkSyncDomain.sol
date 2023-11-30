@@ -76,6 +76,10 @@ contract ZkSyncDomain is BridgedDomain {
             MAILBOX = ICrossDomainZkSync(
                 0x32400084C286CF3E17e7B677ea9583e60a000324
             );
+        } else if (name == keccak256("zksync_era_testnet")) {
+            MAILBOX = ICrossDomainZkSync(
+                0x1908e2BF4a88F91E4eF0DC72f02b8Ea36BEa2319
+            );
         } else {
             revert("Unsupported chain");
         }

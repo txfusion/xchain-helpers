@@ -209,24 +209,24 @@ library XChainForwarders {
         );
     }
 
-    /// ================================ zkSync ================================
+    /// ================================ zkSync Era Style ================================
 
-    function sendMessageZkSync(
-        address crossDomain,
+    function sendMessageZkSyncEra(
+        address l1CrossDomain,
         address contractAddr,
         bytes memory data,
         uint256 gasLimit,
         uint256 gasPerPubdataByteLimit
     ) internal {
         uint256 maxFeePerGas = 1 gwei;
-        uint256 baseCost = ICrossDomainZkSync(crossDomain)
+        uint256 baseCost = ICrossDomainZkSync(l1CrossDomain)
             .l2TransactionBaseCost(
                 maxFeePerGas,
                 gasLimit,
                 gasPerPubdataByteLimit
             );
 
-        ICrossDomainZkSync(crossDomain).requestL2Transaction{value: baseCost}(
+        ICrossDomainZkSync(l1CrossDomain).requestL2Transaction{value: baseCost}(
             contractAddr,
             0,
             data,
@@ -237,14 +237,29 @@ library XChainForwarders {
         );
     }
 
-    function sendMessageZkSyncEra(
+    function sendMessageZkSyncEraMainnet(
         address contractAddr,
         bytes memory data,
         uint256 gasLimit,
         uint256 gasPerPubdataByteLimit
     ) internal {
-        sendMessageZkSync(
+        sendMessageZkSyncEra(
             0x32400084C286CF3E17e7B677ea9583e60a000324,
+            contractAddr,
+            data,
+            gasLimit,
+            gasPerPubdataByteLimit
+        );
+    }
+
+    function sendMessageZkSyncEraTestnet(
+        address contractAddr,
+        bytes memory data,
+        uint256 gasLimit,
+        uint256 gasPerPubdataByteLimit
+    ) internal {
+        sendMessageZkSyncEra(
+            0x1908e2BF4a88F91E4eF0DC72f02b8Ea36BEa2319,
             contractAddr,
             data,
             gasLimit,
