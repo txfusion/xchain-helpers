@@ -32,6 +32,24 @@ interface ICrossDomainZkEVM {
     ) external payable;
 }
 
+interface ICrossDomainZkSync {
+    function requestL2Transaction(
+        address _contractL2,
+        uint256 _l2Value,
+        bytes calldata _calldata,
+        uint256 _l2GasLimit,
+        uint256 _l2GasPerPubdataByteLimit,
+        bytes[] calldata _factoryDeps,
+        address _refundRecipient
+    ) external payable returns (bytes32 canonicalTxHash);
+
+    function l2TransactionBaseCost(
+        uint256 _gasPrice,
+        uint256 _l2GasLimit,
+        uint256 _l2GasPerPubdataByteLimit
+    ) external pure returns (uint256);
+}
+
 /**
  * @title XChainForwarders
  * @notice Helper functions to abstract over L1 -> L2 message passing.
@@ -191,4 +209,62 @@ library XChainForwarders {
         );
     }
 
+    /// ================================ zkSync Era Style ================================
+
+    function sendMessageZkSyncEra(
+        address l1CrossDomain,
+        address contractAddr,
+        bytes memory data,
+        uint256 gasLimit,
+        uint256 gasPerPubdataByteLimit
+    ) internal {
+        // Current gas price estimate (can be updated as needed)
+        uint256 gasPrice = 30 gwei;
+        uint256 baseCost = ICrossDomainZkSync(l1CrossDomain)
+            .l2TransactionBaseCost(
+                gasPrice,
+                gasLimit,
+                gasPerPubdataByteLimit
+            );
+
+        ICrossDomainZkSync(l1CrossDomain).requestL2Transaction{value: baseCost}(
+            contractAddr,
+            0,
+            data,
+            gasLimit,
+            gasPerPubdataByteLimit,
+            new bytes[](0),
+            msg.sender
+        );
+    }
+
+    function sendMessageZkSyncEraMainnet(
+        address contractAddr,
+        bytes memory data,
+        uint256 gasLimit,
+        uint256 gasPerPubdataByteLimit
+    ) internal {
+        sendMessageZkSyncEra(
+            0x32400084C286CF3E17e7B677ea9583e60a000324,
+            contractAddr,
+            data,
+            gasLimit,
+            gasPerPubdataByteLimit
+        );
+    }
+
+    function sendMessageZkSyncEraTestnet(
+        address contractAddr,
+        bytes memory data,
+        uint256 gasLimit,
+        uint256 gasPerPubdataByteLimit
+    ) internal {
+        sendMessageZkSyncEra(
+            0x1908e2BF4a88F91E4eF0DC72f02b8Ea36BEa2319,
+            contractAddr,
+            data,
+            gasLimit,
+            gasPerPubdataByteLimit
+        );
+    }
 }
