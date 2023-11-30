@@ -49,14 +49,14 @@ struct L2CanonicalTransaction {
 }
 
 contract ZkSyncDomain is BridgedDomain {
-    ICrossDomainZkSync public L1_MESSENGER;
+    ICrossDomainZkSync public MAILBOX;
 
     uint160 private constant SYSTEM_CONTRACTS_OFFSET = 0x8000;
 
     IL1Messenger public constant L2_MESSENGER =
         IL1Messenger(address(SYSTEM_CONTRACTS_OFFSET + 0x08));
 
-    bytes32 constant L1_EVENT_TOPIC =
+    bytes32 constant NEW_PRIORITY_REQUEST_TOPIC =
         keccak256(
             "NewPriorityRequest(uint256,bytes32,uint64,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256[4],bytes,bytes,uint256[],bytes,bytes),bytes[])"
         );
@@ -72,8 +72,8 @@ contract ZkSyncDomain is BridgedDomain {
         Domain _hostDomain
     ) Domain(_chain) BridgedDomain(_hostDomain) {
         bytes32 name = keccak256(bytes(_chain.chainAlias));
-        if (name == keccak256("zksync")) {
-            L1_MESSENGER = ICrossDomainZkSync(
+        if (name == keccak256("zksync_era")) {
+            MAILBOX = ICrossDomainZkSync(
                 0x32400084C286CF3E17e7B677ea9583e60a000324
             );
         } else {
@@ -90,8 +90,8 @@ contract ZkSyncDomain is BridgedDomain {
         for (; lastFromHostLogIndex < logs.length; lastFromHostLogIndex++) {
             Vm.Log memory log = logs[lastFromHostLogIndex];
             if (
-                log.topics[0] == L1_EVENT_TOPIC &&
-                log.emitter == address(L1_MESSENGER)
+                log.topics[0] == NEW_PRIORITY_REQUEST_TOPIC &&
+                log.emitter == address(MAILBOX)
             ) {
                 (, , , L2CanonicalTransaction memory transaction, ) = abi
                     .decode(
@@ -105,10 +105,13 @@ contract ZkSyncDomain is BridgedDomain {
                         )
                     );
 
-                vm.startPrank(address(uint160(transaction.from)));
-                (bool success, bytes memory response) = address(
-                    uint160((transaction.to))
-                ).call(transaction.data);
+                address sender = address(uint160(transaction.from));
+                address target = address(uint160(transaction.to));
+
+                vm.startPrank(sender);
+                (bool success, bytes memory response) = target.call(
+                    transaction.data
+                );
                 vm.stopPrank();
 
                 if (!success) {
@@ -135,8 +138,10 @@ contract ZkSyncDomain is BridgedDomain {
                 log.topics[0] == L1_MESSAGE_SENT_TOPIC &&
                 log.emitter == address(L2_MESSENGER)
             ) {
-                (address sender, bytes32 _hash, bytes memory message) = abi
-                    .decode(log.data, (address, bytes32, bytes));
+                (, , bytes memory message) = abi.decode(
+                    log.data,
+                    (address, bytes32, bytes)
+                );
 
                 //1. prove the L2 message inclusion
                 //2. execute message on L1
@@ -145,6 +150,11 @@ contract ZkSyncDomain is BridgedDomain {
                 );
 
                 (bool success, bytes memory response) = target.call(_calldata);
+                if (!success) {
+                    assembly {
+                        revert(add(response, 32), mload(response))
+                    }
+                }
             }
         }
 

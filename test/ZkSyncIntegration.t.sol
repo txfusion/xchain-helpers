@@ -10,10 +10,10 @@ contract ZkSyncIntegrationTest is IntegrationBaseTest {
 
     function test_zksync() public {
         setChain(
-            "zksync",
-            ChainData("ZkSync", 324, "https://mainnet.era.zksync.io")
+            "zksync_era",
+            ChainData("zkSync Era", 324, "https://mainnet.era.zksync.io")
         );
-        checkZkSyncStyle(new ZkSyncDomain(getChain("zksync"), mainnet));
+        checkZkSyncStyle(new ZkSyncDomain(getChain("zksync_era"), mainnet));
     }
 
     function checkZkSyncStyle(ZkSyncDomain zksync) public {
@@ -50,6 +50,8 @@ contract ZkSyncIntegrationTest is IntegrationBaseTest {
             10_000_000_0,
             800
         );
+
+        assertEq(moHost.length(), 0);
 
         zksync.relayFromHost(true);
 

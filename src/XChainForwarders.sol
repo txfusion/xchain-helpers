@@ -16,7 +16,6 @@ interface ICrossDomainArbitrum {
         uint256 maxFeePerGas,
         bytes calldata data
     ) external payable returns (uint256);
-
     function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee) external view returns (uint256);
 }
 
