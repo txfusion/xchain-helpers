@@ -55,12 +55,11 @@ interface ICrossDomainZkSync {
         address _refundRecipient
     ) external payable returns (bytes32 canonicalTxHash);
 
-    // function callZkSync(
-    //     address contractAddr,
-    //     bytes memory data,
-    //     uint256 gasLimit,
-    //     uint256 gasPerPubdataByteLimit
-    // ) external payable;
+    function l2TransactionBaseCost(
+        uint256 _gasPrice,
+        uint256 _l2GasLimit,
+        uint256 _l2GasPerPubdataByteLimit
+    ) external pure returns (uint256);
 }
 
 /**
@@ -234,10 +233,17 @@ library XChainForwarders {
         address contractAddr,
         bytes memory data,
         uint256 gasLimit,
-        uint256 gasPerPubdataByteLimit,
-        uint256 _value
+        uint256 gasPerPubdataByteLimit
     ) internal {
-        ICrossDomainZkSync(crossDomain).requestL2Transaction{value: _value}(
+        uint256 maxFeePerGas = 1 gwei;
+        uint256 baseCost = ICrossDomainZkSync(crossDomain)
+            .l2TransactionBaseCost(
+                maxFeePerGas,
+                gasLimit,
+                gasPerPubdataByteLimit
+            );
+
+        ICrossDomainZkSync(crossDomain).requestL2Transaction{value: baseCost}(
             contractAddr,
             0,
             data,
@@ -246,13 +252,6 @@ library XChainForwarders {
             new bytes[](0),
             msg.sender
         );
-
-        // ICrossDomainZkSync(crossDomain).callZkSync(
-        //     contractAddr,
-        //     data,
-        //     gasLimit,
-        //     gasPerPubdataByteLimit
-        // );
     }
 
     function sendMessageZkSyncEra(
@@ -266,8 +265,7 @@ library XChainForwarders {
             contractAddr,
             data,
             gasLimit,
-            gasPerPubdataByteLimit,
-            1 ether //TODO estimate value to send
+            gasPerPubdataByteLimit
         );
     }
 }
